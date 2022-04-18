@@ -62,26 +62,18 @@ def main():
                     print(', '.join([v[4] for v in targetvals]))
 
         html_printer = HtmlPrinter()
-        html_printer.setup()
-        html_printer.start_body()
-        html_printer.start_table()
-        html_printer.start_table_header()
         for position in positions:
             html_printer.add_table_header_column(position)
-        html_printer.close_table_header()
-        html_printer.start_table_body()
         for team in teams:
-            html_printer.start_table_record(team)
+            _record = []
+            _record.append(team)
             for position in positions:
                 target_players = []
                 for value in values:
                     if (value[0] == team) and (value[1] == position):
                         target_players.append(value[4])
-                html_printer.add_table_body_cell(target_players)
-            html_printer.close_table_record()
-        html_printer.close_table()
-        html_printer.close_body()
-        html_printer.setDown()
+                _record.append(target_players)
+            html_printer.add_table_record(_record)
 
         html_printer.print()
 
@@ -90,6 +82,8 @@ def main():
 class HtmlPrinter:
     def __init__(self):
         self.content = []
+        self._table_headers = []
+        self._table_records = []
 
     def setup(self):
         self.add('''
@@ -144,7 +138,13 @@ class HtmlPrinter:
         self.add_table_header_column('#')
 
     def add_table_header_column(self, text):
-        self.add('<th>%s</th>' % text)
+        self._table_headers.append(text)
+
+    def add_table_record(self, values):
+        self._table_records.append(values)
+
+#    def add_table_header_column(self, text):
+#        self.add('<th>%s</th>' % text)
 
     def close_table_header(self):
         self.add('''
@@ -172,7 +172,54 @@ class HtmlPrinter:
         self.content.append(text)
 
     def print(self):
-        print('\n'.join(self.content), file=codecs.open('out.html', 'w', 'utf-8'))
+        content = []
+        content.append('''\
+            <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>出力例</title>
+                    <style type="text/css">
+                        table, td {
+                            border: solid;
+                        }
+                    table tr td:nth-of-type(1){
+                        background-color: #333;
+                        color: #fff;
+                    }
+                    thead, tfoot {
+                        background-color: #333;
+                        color: #fff;
+                    }
+                    div {
+                        background-color: #BAD3FF;
+                        margin : 10px;
+                        }
+                    </style>
+                </head>
+                ''')
+        content.append('<body>')
+        content.append('<table>')
+        content.append('<thead>')
+        content.append('<tr>')
+        content.append('<th>#</th>')
+        for header in self._table_headers:
+            content.append('<th>%s</th>' % header)
+        content.append('</tr>')
+        content.append('</thead>')
+        content.append('<tbody>')
+        for record in self._table_records:
+            content.append('<tr>')
+            content.append('<td>%s</td>' % record[0])
+            for column_cell in record[1:]:
+                content.append('<td>')
+                for column_cell_value in column_cell:
+                    content.append('<div>%s</div>' % column_cell_value)
+                content.append('</td>')
+            content.append('</tr>')
+        content.append('</table>')
+        content.append('</body>')
+        print('\n'.join(content), file=codecs.open('out.html', 'w', 'utf-8'))
 
 
 if __name__ == "__main__":
