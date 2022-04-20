@@ -26,7 +26,8 @@ class HtmlPrinter:
 @click.argument('rowname', type=click.STRING)
 @click.argument('columnname', type=click.STRING)
 @click.argument('displayname', type=click.STRING)
-def main(filename, rowname, columnname, displayname):
+@click.option('--row_master', type=click.Path(exists=True))
+def main(filename, rowname, columnname, displayname, row_master):
     with open(filename, encoding='utf_8_sig') as csvfile:
         csvreader = csv.reader(csvfile)
 
@@ -49,11 +50,19 @@ def main(filename, rowname, columnname, displayname):
 
         # Row Definition
         row_definitions = []
-        for csv_value in csv_values:
-            tmp_row_definition = csv_value[csv_column_index_for_row]
-            if tmp_row_definition not in row_definitions:
-                row_definitions.append(tmp_row_definition)
-        pprint(row_definitions)
+        if row_master is None:
+            for csv_value in csv_values:
+                tmp_row_definition = csv_value[csv_column_index_for_row]
+                if tmp_row_definition not in row_definitions:
+                    row_definitions.append(tmp_row_definition)
+            pprint(row_definitions)
+        else:
+            with open(row_master,   encoding='utf_8_sig') as row_master_csv_file:
+                row_master_csv_reader = csv.reader(row_master_csv_file)
+                for row_master in row_master_csv_reader:
+                    row_definitions.append(row_master[0])
+                row_definitions = row_definitions[1:]
+
 
         # Column Definition
         column_definitions = []
