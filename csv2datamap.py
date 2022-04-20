@@ -43,6 +43,10 @@ def main(filename, rowname, columnname, displayname):
         csv_column_index_for_column = csv_column_definitions.index(columnname)
         csv_column_index_for_display = csv_column_definitions.index(displayname)
 
+        template_file = open('template/template.html', encoding="utf_8_sig")
+        template_html_text = template_file.read()
+        template_file.close()
+
         # Row Definition
         row_definitions = []
         for csv_value in csv_values:
@@ -73,7 +77,7 @@ def main(filename, rowname, columnname, displayname):
                 else:
                     print(', '.join([v[4] for v in targetvals]))
 
-        html_printer = HtmlPrinter()
+        html_printer = HtmlPrinter(template_html_text)
         for column_definition in column_definitions:
             html_printer.add_table_header_column(column_definition)
         for row_definition in row_definitions:
@@ -92,7 +96,8 @@ def main(filename, rowname, columnname, displayname):
 
 
 class HtmlPrinter:
-    def __init__(self):
+    def __init__(self, html_text):
+        self.html_text = html_text
         self._table_headers = []
         self._table_records = []
 
@@ -103,55 +108,26 @@ class HtmlPrinter:
         self._table_records.append(values)
 
     def print(self):
-        content = []
-        content.append('''\
-            <!DOCTYPE html>
-                <html lang="ja">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>出力例</title>
-                    <style type="text/css">
-                        table, td {
-                            border: solid;
-                        }
-                    table tr td:nth-of-type(1){
-                        background-color: #333;
-                        color: #fff;
-                    }
-                    thead, tfoot {
-                        background-color: #333;
-                        color: #fff;
-                    }
-                    div {
-                        background-color: #BAD3FF;
-                        margin : 10px;
-                        }
-                    </style>
-                </head>
-                ''')
-        content.append('<body>')
-        content.append('<table>')
-        content.append('<thead>')
-        content.append('<tr>')
-        content.append('<th>#</th>')
-        for header in self._table_headers:
-            content.append('<th>%s</th>' % header)
-        content.append('</tr>')
-        content.append('</thead>')
-        content.append('<tbody>')
-        for record in self._table_records:
-            content.append('<tr>')
-            content.append('<td>%s</td>' % record[0])
-            for column_cell in record[1:]:
-                content.append('<td>')
-                for column_cell_value in column_cell:
-                    content.append('<div>%s</div>' % column_cell_value)
-                content.append('</td>')
-            content.append('</tr>')
-        content.append('</table>')
-        content.append('</body>')
-        print('\n'.join(content), file=codecs.open('out.html', 'w', 'utf-8'))
+        table_headers = []
+        table_bodies =  []
 
+        for header in self._table_headers:
+            table_headers.append('<th>%s</th>' % header)
+
+        for record in self._table_records:
+            table_bodies.append('<tr>')
+            table_bodies.append('<td>%s</td>' % record[0])
+            for column_cell in record[1:]:
+                table_bodies.append('<td>')
+                for column_cell_value in column_cell:
+                    table_bodies.append('<div>%s</div>' % column_cell_value)
+                table_bodies.append('</td>')
+            table_bodies.append('</tr>')
+
+        html_text = self.html_text.\
+            replace('<!---REPLACE1-->', '\n'.join(table_headers)).\
+            replace('<!---REPLACE2-->', '\n'.join(table_bodies))
+        print(html_text, file=codecs.open('out.html', 'w', 'utf-8'))
 
 if __name__ == "__main__":
     main()
