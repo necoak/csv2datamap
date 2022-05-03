@@ -48,9 +48,23 @@ def generate_row1_col1_map(csv_values, template_html_text, csv_column_index_for_
     html_printer.print()
 
 
-def generate_rown_col1(csv_values, template_html_text, csv_column_index_for_row,
-                        csv_column_index_for_column, csv_column_index_for_display,
-                       row_master):
+def is_match_kv2(key1, val1, key2, val2, kvlist):
+    print(key1, val1, key2, val2, kvlist)
+    is_ok1, is_ok2 = False, False
+    for k, v in kvlist:
+        if (k == key1) and (v == val1):
+            is_ok1 = True
+        if (k == key2) and (v == val2):
+            is_ok2 = True
+    if is_ok1 and is_ok2:
+        return True
+    else:
+        return False
+
+
+def generate_rown_col1(csv_kvlist, template_html_text,
+                       rowname, columnname, displayname,
+                       row_master, csv_column_definition):
     row_definitions = []
     keys = []
     with open(row_master, encoding='utf_8_sig') as row_master_csv_file:
@@ -61,13 +75,29 @@ def generate_rown_col1(csv_values, template_html_text, csv_column_index_for_row,
 
         row_definitions = convert_csv2kvlist(_csv_records)
 
-    csv_values2 = convert_csv2kvlist(csv_values)
-
     pprint(row_definitions)
     pprint('--------------------------')
-    pprint(csv_values)
+    pprint(csv_kvlist)
+
+    mymap = []
+    for row_definition in row_definitions:
+        ret_record = [row_definition]
+        key = None
+        pprint(row_definition)
+        for k,v in row_definition:
+            if k == rowname:
+                key = v
+        pprint(key)
+
+        for column_key in csv_column_definition:
+            print('column_key ', column_key)
+            ret_record.append(
+                list(filter(lambda kv: is_match_kv2(rowname, key, columnname, column_key, kv), csv_kvlist)))
+        mymap.append(ret_record)
     pprint('--------------------------')
-    pprint(csv_values2)
+    pprint(mymap)
+
+
 
 def convert_csv2kvlist(csv_value):
     keys = csv_value[0]
@@ -93,11 +123,16 @@ def main(filename, rowname, columnname, displayname,
         csv_column_definitions = []
         csv_values = []
 
+        _csv_records = []
+
         for row in csvreader:
+            _csv_records.append(row)
             if len(csv_column_definitions) == 0:
                 csv_column_definitions = row
             else:
                 csv_values.append(row)
+
+        csv_kvlist = convert_csv2kvlist(_csv_records)
 
         csv_column_index_for_row = csv_column_definitions.index(rowname)
         csv_column_index_for_column = csv_column_definitions.index(columnname)
@@ -108,6 +143,13 @@ def main(filename, rowname, columnname, displayname,
         template_file.close()
 
         shutil.copy('template/style.css', 'out/style.css')
+
+        # Column Definition
+        column_definitions = []
+        for csv_value in csv_values:
+            tmp_column_definition = csv_value[csv_column_index_for_column]
+            if tmp_column_definition not in column_definitions:
+                column_definitions.append(tmp_column_definition)
 
         # Row Definition
         row_definitions = []
@@ -121,9 +163,9 @@ def main(filename, rowname, columnname, displayname,
                 if tmp_row_definition not in row_definitions:
                     row_definitions.append(tmp_row_definition)
         else:
-            generate_rown_col1(csv_values, template_html_text, csv_column_index_for_row,
-                               csv_column_index_for_column, csv_column_index_for_display,
-                               row_master)
+            generate_rown_col1(csv_kvlist, template_html_text,
+                               rowname, columnname, displayname,
+                               row_master, column_definitions)
             sys.exit(9)
             with open(row_master,   encoding='utf_8_sig') as row_master_csv_file:
                 row_master_csv_reader = csv.reader(row_master_csv_file)
