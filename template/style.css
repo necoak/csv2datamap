@@ -1,9 +1,14 @@
-﻿table {
+﻿table.table_head td {
+    border: 1px solid #000000;
+    background-color: #aaaaaa;
+    color: #777777;
+}
+table.my_table {
     border: 1px solid;
     bordercolor=#0000AB;
     border-collapse: collapse;
 }
-td {
+mytable.td {
     border:1px solid #000000;
 }
 tr td:nth-of-type(1) {
@@ -19,3 +24,4 @@ div {
     background-color: #a1d8e2;
     margin: 10px;
 }
+

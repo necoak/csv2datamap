@@ -3,6 +3,78 @@ import codecs
 import csv
 from pprint import pprint
 import shutil
+import sys
+
+
+def generate_row1_col1_map(csv_values, template_html_text, csv_column_index_for_row,
+                            csv_column_index_for_column, csv_column_index_for_display):
+    row_definitions = []
+    for csv_value in csv_values:
+        tmp_row_definition = csv_value[csv_column_index_for_row]
+        if tmp_row_definition not in row_definitions:
+            row_definitions.append(tmp_row_definition)
+
+    # Column Definition
+    column_definitions = []
+    for csv_value in csv_values:
+        tmp_column_definition = csv_value[csv_column_index_for_column]
+        if tmp_column_definition not in column_definitions:
+            column_definitions.append(tmp_column_definition)
+
+    # Row x Column で構造化
+    for row_definition in row_definitions:
+        for column_definition in column_definitions:
+            targetvals = []
+            for csv_value in csv_values:
+                if (csv_value[csv_column_index_for_row] == row_definition) and \
+                        (csv_value[csv_column_index_for_column] == csv_column_index_for_column):
+                    targetvals.append(csv_value)
+
+    html_printer = HtmlPrinter(template_html_text)
+    for column_definition in column_definitions:
+        html_printer.add_table_header_column(column_definition)
+    for row_definition in row_definitions:
+        _record = []
+        _record.append(row_definition)
+        for column_definition in column_definitions:
+            target_elements = []
+            for csv_value in csv_values:
+                if ((csv_value[csv_column_index_for_row] == row_definition) and
+                        (csv_value[csv_column_index_for_column] == column_definition)):
+                    target_elements.append(csv_value[csv_column_index_for_display])
+            _record.append(target_elements)
+        html_printer.add_table_record(_record)
+
+    html_printer.print()
+
+
+def generate_rown_col1(csv_values, template_html_text, csv_column_index_for_row,
+                        csv_column_index_for_column, csv_column_index_for_display,
+                       row_master):
+    row_definitions = []
+    keys = []
+    with open(row_master, encoding='utf_8_sig') as row_master_csv_file:
+        row_master_csv_reader = csv.reader(row_master_csv_file)
+        _csv_records = []
+        for csv_record in row_master_csv_reader:
+            _csv_records.append(csv_record)
+
+        row_definitions = convert_csv2kvlist(_csv_records)
+
+    csv_values2 = convert_csv2kvlist(csv_values)
+
+    pprint(row_definitions)
+    pprint('--------------------------')
+    pprint(csv_values)
+    pprint('--------------------------')
+    pprint(csv_values2)
+
+def convert_csv2kvlist(csv_value):
+    keys = csv_value[0]
+    kvlist = []
+    for record in csv_value[1:]:
+        kvlist.append(list(zip(keys, record)))
+    return kvlist
 
 
 @click.command()
@@ -40,11 +112,19 @@ def main(filename, rowname, columnname, displayname,
         # Row Definition
         row_definitions = []
         if row_master is None:
+            generate_row1_col1_map(csv_values, template_html_text, csv_column_index_for_row,
+                                   csv_column_index_for_column, csv_column_index_for_display)
+            sys.exit(0)
+
             for csv_value in csv_values:
                 tmp_row_definition = csv_value[csv_column_index_for_row]
                 if tmp_row_definition not in row_definitions:
                     row_definitions.append(tmp_row_definition)
         else:
+            generate_rown_col1(csv_values, template_html_text, csv_column_index_for_row,
+                               csv_column_index_for_column, csv_column_index_for_display,
+                               row_master)
+            sys.exit(9)
             with open(row_master,   encoding='utf_8_sig') as row_master_csv_file:
                 row_master_csv_reader = csv.reader(row_master_csv_file)
                 for row_master in row_master_csv_reader:
