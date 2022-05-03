@@ -2,23 +2,7 @@ import click
 import codecs
 import csv
 from pprint import pprint
-
-
-class ColumnDefinitions:
-    def __init__(self):
-        self.colum_definitions = []
-
-    def add(self, column_name):
-        self.colum_definitions.append(ColumnDefinition(column_name))
-
-
-class ColumnDefinition:
-    def __init__(self, column_name):
-        self.column_name = column_name
-
-
-class HtmlPrinter:
-    pass
+import shutil
 
 
 @click.command()
@@ -27,7 +11,10 @@ class HtmlPrinter:
 @click.argument('columnname', type=click.STRING)
 @click.argument('displayname', type=click.STRING)
 @click.option('--row_master', type=click.Path(exists=True))
-def main(filename, rowname, columnname, displayname, row_master):
+@click.option('--column_master', type=click.Path(exists=True))
+def main(filename, rowname, columnname, displayname,
+         row_master, column_master):
+
     with open(filename, encoding='utf_8_sig') as csvfile:
         csvreader = csv.reader(csvfile)
 
@@ -44,9 +31,11 @@ def main(filename, rowname, columnname, displayname, row_master):
         csv_column_index_for_column = csv_column_definitions.index(columnname)
         csv_column_index_for_display = csv_column_definitions.index(displayname)
 
-        template_file = open('template/template.html', encoding="utf_8_sig")
+        template_file = open('template/main_template.html', encoding="utf_8_sig")
         template_html_text = template_file.read()
         template_file.close()
+
+        shutil.copy('template/style.css', 'out/style.css')
 
         # Row Definition
         row_definitions = []
@@ -55,7 +44,6 @@ def main(filename, rowname, columnname, displayname, row_master):
                 tmp_row_definition = csv_value[csv_column_index_for_row]
                 if tmp_row_definition not in row_definitions:
                     row_definitions.append(tmp_row_definition)
-            pprint(row_definitions)
         else:
             with open(row_master,   encoding='utf_8_sig') as row_master_csv_file:
                 row_master_csv_reader = csv.reader(row_master_csv_file)
@@ -70,21 +58,15 @@ def main(filename, rowname, columnname, displayname, row_master):
             tmp_column_definition = csv_value[csv_column_index_for_column]
             if tmp_column_definition not in column_definitions:
                 column_definitions.append(tmp_column_definition)
-        pprint(column_definitions)
 
         # Row x Column で構造化
         for row_definition in row_definitions:
             for column_definition in column_definitions:
-                print('%s %s : ' % (row_definition, column_definition), end='')
                 targetvals = []
                 for csv_value in csv_values:
                     if (csv_value[csv_column_index_for_row] == row_definition) and \
                             (csv_value[csv_column_index_for_column] == csv_column_index_for_column):
                         targetvals.append(csv_value)
-                if len(targetvals) == 0:
-                    print('None')
-                else:
-                    print(', '.join([v[4] for v in targetvals]))
 
         html_printer = HtmlPrinter(template_html_text)
         for column_definition in column_definitions:
@@ -136,7 +118,9 @@ class HtmlPrinter:
         html_text = self.html_text.\
             replace('<!---REPLACE1-->', '\n'.join(table_headers)).\
             replace('<!---REPLACE2-->', '\n'.join(table_bodies))
-        print(html_text, file=codecs.open('out.html', 'w', 'utf-8'))
+        print(html_text, file=codecs.open('./out/main.html', 'w', 'utf-8'))
+
+
 
 if __name__ == "__main__":
     main()
