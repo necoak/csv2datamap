@@ -30,7 +30,8 @@ def generate_row1_col1_map(csv_values, template_html_text, csv_column_index_for_
                         (csv_value[csv_column_index_for_column] == csv_column_index_for_column):
                     targetvals.append(csv_value)
 
-    html_printer = HtmlPrinter(template_html_text)
+    html_printer = HtmlPrinter(template_html_text, 1)
+    html_printer.add_table_header_column('#')
     for column_definition in column_definitions:
         html_printer.add_table_header_column(column_definition)
     for row_definition in row_definitions:
@@ -96,6 +97,33 @@ def generate_rown_col1(csv_kvlist, template_html_text,
         mymap.append(ret_record)
     pprint('--------------------------')
     pprint(mymap)
+
+    html_printer = HtmlPrinter(template_html_text, len(row_definitions[0]))
+    #
+    for k,v in row_definitions[0]:
+        pprint(k)
+        html_printer.add_table_header_column(k)
+    for column_key in csv_column_definition:
+        pprint(column_key)
+        html_printer.add_table_header_column(column_key)
+    #
+    for mymap_i in mymap:
+        _record = []
+        for k,v in mymap_i[0]:
+            _record.append(v)
+        for mymap_ij in mymap_i[1:]:
+            target_elements = []
+            for mymap_ijk in mymap_ij:
+                for ijk_k, ijk_v in mymap_ijk:
+                    if ijk_k == displayname:
+                        target_elements.append(ijk_v)
+            _record.append(target_elements)
+        pprint('===========================')
+        pprint(_record)
+        html_printer.add_table_record(_record)
+
+    html_printer.print()
+
 
 
 
@@ -209,10 +237,11 @@ def main(filename, rowname, columnname, displayname,
 
 
 class HtmlPrinter:
-    def __init__(self, html_text):
+    def __init__(self, html_text, header_column_num):
         self.html_text = html_text
         self._table_headers = []
         self._table_records = []
+        self._header_column_num = header_column_num
 
     def add_table_header_column(self, text):
         self._table_headers.append(text)
@@ -225,15 +254,16 @@ class HtmlPrinter:
         table_bodies =  []
 
         for header in self._table_headers:
-            table_headers.append('<th>%s</th>' % header)
+            table_headers.append('<th class="headline">%s</th>' % header)
 
         for record in self._table_records:
-            table_bodies.append('<tr>')
-            table_bodies.append('<td>%s</td>' % record[0])
-            for column_cell in record[1:]:
-                table_bodies.append('<td>')
+            # table_bodies.append('<tr>')
+            for column_cell in record[:self._header_column_num]:
+                table_bodies.append('<td class="headline">%s</td>' % column_cell)
+            for column_cell in record[self._header_column_num:]:
+                table_bodies.append('<td class="cell">')
                 for column_cell_value in column_cell:
-                    table_bodies.append('<div>%s</div>' % column_cell_value)
+                    table_bodies.append('<div class="element">%s</div>' % column_cell_value)
                 table_bodies.append('</td>')
             table_bodies.append('</tr>')
 
